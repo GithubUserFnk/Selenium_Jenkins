@@ -1,72 +1,101 @@
 package com.orangehrm.base;
 
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
-import io.github.bonigarcia.wdm.WebDriverManager;
+import org.openqa.selenium.chrome.ChromeOptions;
 
-import java.io.File;
-import java.io.IOException;
+import io.github.bonigarcia.wdm.WebDriverManager;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
-import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.BeforeMethod;
-import com.aventstack.extentreports.MediaEntityBuilder;
-import org.apache.commons.io.FileUtils;
+import org.testng.annotations.AfterMethod;
+
+import java.util.Map;
+import java.io.File;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class BaseTest {
+
     protected WebDriver driver;
     protected Logger logger;
-    protected ExtentReports extent;
-    protected ExtentTest test;
+    protected static ExtentReports extent; // 🔥 STATIC
+
+    @BeforeSuite
+    public void setupReport() {
+        try {
+            // Buat folder reports kalau belum ada
+            File reportDir = new File("reports");
+            if (!reportDir.exists()) {
+                reportDir.mkdirs();
+            }
+
+            // Timestamp untuk report unik per run
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String reportPath = "reports/test-report_" + timestamp + ".html";
+
+            ExtentSparkReporter spark = new ExtentSparkReporter(reportPath);
+            extent = new ExtentReports();
+            extent.attachReporter(spark);
+
+            System.out.println("ExtentReport dibuat: " + reportPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     @BeforeMethod
     public void setUp() {
-        // Setup WebDriver otomatis
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
+        try {
+            ChromeOptions options = new ChromeOptions();
 
-        // Setup Log4j
-        logger = LogManager.getLogger(this.getClass());
-        logger.info("Browser dibuka");
+            options.addArguments(
+                    "--disable-save-password-bubble",
+                    "--disable-notifications",
+                    "--disable-infobars",
+                    "--disable-features=PasswordLeakDetection,PasswordManagerOnboarding"
+            );
 
-        // Setup ExtentReports 5.x
-        ExtentSparkReporter spark = new ExtentSparkReporter("test-report.html");
-        extent = new ExtentReports();
-        extent.attachReporter(spark);
+            options.setExperimentalOption("prefs", Map.of(
+                    "credentials_enable_service", false,
+                    "profile.password_manager_enabled", false,
+                    "profile.password_manager_leak_detection", false
+            ));
 
-        test = extent.createTest(this.getClass().getSimpleName());
+            // Setup ChromeDriver
+            WebDriverManager.chromedriver().setup();
+            driver = new ChromeDriver(options);
+
+            // Logger
+            logger = LogManager.getLogger(this.getClass());
+            logger.info("Browser dibuka (Chrome, password breach OFF)");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Gagal buka browser: " + e.getMessage());
+        }
     }
 
     @AfterMethod
     public void tearDown() {
-        if(driver != null) driver.quit();
-        logger.info("Browser ditutup");
-
-        if(extent != null) extent.flush(); // generate report
+        if (driver != null) {
+            driver.quit();
+            logger.info("Browser ditutup");
+        }
     }
 
-    public void captureScreenshot(String name) {
-        try {
-            // Ambil screenshot
-            File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            String path = "screenshots/" + name + "_" + System.currentTimeMillis() + ".png";
-            File destFile = new File(path);
-            FileUtils.copyFile(srcFile, destFile);
-
-            // Attach ke ExtentReport
-            test.pass("Screenshot: " + name,
-                    MediaEntityBuilder.createScreenCaptureFromPath(path).build());
-
-        } catch (IOException e) {
-            test.fail("Gagal ambil screenshot: " + e.getMessage());
+    @AfterSuite
+    public void flushReport() {
+        if (extent != null) {
+            extent.flush(); // 🔥 cuma sekali per suite
+            System.out.println("ExtentReport flush selesai");
         }
     }
 }

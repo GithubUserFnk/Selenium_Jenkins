@@ -1,8 +1,18 @@
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
-<suite name="SeleniumTestSuite">
-    <test name="SeleniumTests">
+<suite name="OrangeHRM Suite" parallel="false">
+
+    <!-- ==================== LOGIN + APPOINTMENT ==================== -->
+    <test name="Login and Make Appointment Test">
+
+        <!-- ===== EXCEL PATH ===== -->
+        <parameter name="loginExcelPath" value="src/test/resources/LoginData.xlsx"/>
+        <parameter name="loginSheet" value="Sheet1"/>
+        <parameter name="formExcelPath" value="src/test/resources/Make Appointment.xlsx"/>
+        <parameter name="formSheet" value="Sheet1"/>
+
         <classes>
-            <class name="com.orangehrm.tests.LoginTest"/>
+            <class name="com.orangehrm.tests.TestSuites.E2ELoginAppointment"/>
         </classes>
     </test>
+
 </suite>

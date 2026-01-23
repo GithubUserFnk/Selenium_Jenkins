@@ -2,48 +2,55 @@ package com.orangehrm.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import java.time.Duration;
 
 public class LoginPage {
+
     private WebDriver driver;
 
-    // Locators
-    private By makeAppointmentButton = By.xpath("//a[@id='btn-make-appointment']");
-    private By usernameField = By.xpath("//input[@id='txt-username']");
-    private By passwordField = By.xpath("//input[@id='txt-password']");
-    private By loginButton = By.xpath("//button[@id='btn-login']");
+    private By makeAppointmentButton = By.id("btn-make-appointment");
+    private By usernameField = By.id("txt-username");
+    private By passwordField = By.id("txt-password");
+    private By loginButton = By.id("btn-login");
     private By banner = By.xpath("//div[@class='col-sm-12 text-center']/h2");
+    private By loginFail = By.xpath("//p[@class='lead text-danger']");
 
-    // Constructor
     public LoginPage(WebDriver driver) {
         this.driver = driver;
     }
 
-    // Actions / Methods
-    public void clickAppointment() {
+    public void openLoginForm() {
         driver.findElement(makeAppointmentButton).click();
     }
 
-    public void enterUsername(String username) {
+    public void fillCredential(String username, String password) {
         driver.findElement(usernameField).sendKeys(username);
-    }
-
-    public void enterPassword(String password) {
         driver.findElement(passwordField).sendKeys(password);
     }
 
-    public void clickLogin() {
+    public void submitLogin() {
         driver.findElement(loginButton).click();
     }
 
-    public boolean isBannerPresent() {
-        return driver.findElement(banner).isDisplayed();
+    public boolean isLoginSuccess() {
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(banner));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    // Optional: method gabungan
-    public void loginAs(String username, String password) {
-        clickAppointment();
-        enterUsername(username);
-        enterPassword(password);
-        clickLogin();
+    public boolean isLoginFail() {
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(loginFail));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
